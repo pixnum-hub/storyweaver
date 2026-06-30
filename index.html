@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>StoryWeaver — AI Storytelling</title>
+<meta name="description" content="Craft AI-powered stories across 18 genres, 35 languages, and infinite settings.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f0f13">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StoryWeaver">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#0f0f13;color:#e8e6f0;font-family:'DM Sans',sans-serif;min-height:100vh;overscroll-behavior-y:none}
+#splash{position:fixed;inset:0;background:#0f0f13;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease}
+#splash .splash-icon{width:100px;height:100px;border-radius:22px;background:linear-gradient(135deg,#c084fc,#818cf8);display:flex;align-items:center;justify-content:center;font-size:2.8rem;box-shadow:0 8px 40px rgba(192,132,252,.4);animation:splashPulse 2s ease-in-out infinite}
+#splash p{color:#7a788a;font-family:'DM Sans',sans-serif;font-size:.85rem;margin-top:16px}
+#splash.hide{opacity:0;pointer-events:none}
+@keyframes splashPulse{0%,100%{transform:scale(1);box-shadow:0 8px 32px rgba(192,132,252,.3)}50%{transform:scale(1.05);box-shadow:0 12px 48px rgba(192,132,252,.6)}}
+#app{display:none;flex-direction:column;min-height:100vh}
+#app.ready{display:flex}
+/* Install banner */
+#install-banner{position:fixed;bottom:0;left:0;right:0;background:#1a1a22;border-top:1px solid #2e2e3d;padding:12px 16px;display:none;align-items:center;gap:12px;z-index:500;font-family:'DM Sans',sans-serif}
+#install-banner.show{display:flex}
+#install-banner .ib-icon{font-size:1.6rem;flex-shrink:0}
+#install-banner .ib-text{flex:1;color:#e8e6f0;font-size:.82rem;font-weight:500}
+#install-banner .ib-text small{display:block;color:#7a788a;font-size:.72rem;margin-top:1px}
+#install-banner button{border:none;border-radius:8px;padding:8px 14px;font-size:.8rem;font-family:'DM Sans',sans-serif;cursor:pointer}
+#install-btn{background:#7c3aed;color:#fff;font-weight:500}
+#dismiss-btn{background:transparent;color:#7a788a}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-icon">✦</div>
+  <p>Loading StoryWeaver…</p>
+</div>
+
+<div id="install-banner">
+  <div class="ib-icon">✦</div>
+  <div class="ib-text">Install StoryWeaver<small>Add to home screen for the full experience</small></div>
+  <button id="install-btn">⬇ Install</button>
+  <button id="dismiss-btn">✕</button>
+</div>
+
+<div id="app">
+  <!-- HEADER -->
+  <header id="hdr" style="padding:13px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2e2e3d;position:sticky;top:0;background:#0f0f13;z-index:50">
+    <div id="logo" style="font-family:'Lora',serif;font-size:1.2rem;font-weight:600;background:linear-gradient(135deg,#c084fc,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">✦ StoryWeaver</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <div id="theme-bar" style="display:flex;gap:5px"></div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main id="main-content" style="flex:1;display:flex;flex-direction:column;align-items:center;padding:22px 15px;gap:18px;max-width:700px;margin:0 auto;width:100%">
+
+    <!-- HERO -->
+    <div style="text-align:center;padding:6px 0 2px">
+      <h1 id="hero-h1" style="font-family:'Lora',serif;font-size:clamp(1.5rem,5vw,2.3rem);line-height:1.2;margin-bottom:8px">
+        Craft Stories with<br><em id="hero-em" style="font-style:italic;background:linear-gradient(135deg,#c084fc,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">AI Magic</em>
+      </h1>
+      <p id="hero-p" style="color:#7a788a;font-size:.9rem;max-width:440px;margin:0 auto">Pick a genre, shape your settings, and watch your story come alive — instantly.</p>
+    </div>
+
+    <!-- SETTINGS CARD -->
+    <div id="settings-card" class="sw-card">
+      <div class="sw-label">Genre</div>
+      <div id="genres" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px"></div>
+
+      <div class="sw-label" style="margin-top:14px">Your Prompt</div>
+      <textarea id="prompt" class="sw-ta" placeholder="e.g. A girl discovers a hidden door in her grandmother's attic…" maxlength="400"></textarea>
+      <div id="char-count" style="font-size:.71rem;color:#7a788a;text-align:right;margin-top:3px">0/400</div>
+
+      <div class="sw-label" style="margin-top:14px">Story Settings</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px" id="settings-grid"></div>
+
+      <div style="margin-top:10px">
+        <div style="font-size:.75rem;color:#7a788a;margin-bottom:5px">🌐 Output Language</div>
+        <select id="sel-language" class="sw-sel"></select>
+      </div>
+
+      <div class="sw-label" style="margin-top:14px">Extras</div>
+      <div id="extras" style="display:flex;flex-wrap:wrap;gap:7px;margin-top:4px"></div>
+
+      <button id="gen-btn" onclick="generateStory()" style="width:100%;padding:13px;background:#7c3aed;border:none;border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;transition:all .2s">
+        <span>✦</span> Generate Story
+      </button>
+    </div>
+
+    <!-- LOADER -->
+    <div id="loader" style="display:none;flex-direction:column;align-items:center;gap:12px;padding:30px;width:100%">
+      <div style="display:flex;gap:6px">
+        <div class="dot" style="animation-delay:0s"></div>
+        <div class="dot" style="animation-delay:.2s"></div>
+        <div class="dot" style="animation-delay:.4s"></div>
+      </div>
+      <p id="loader-msg" style="color:#7a788a;font-size:.86rem">Weaving your story…</p>
+    </div>
+
+    <!-- STORY OUTPUT -->
+    <div id="story-out" style="display:none;width:100%" class="sw-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div id="story-title" style="font-family:'Lora',serif;font-size:1.12rem;font-weight:600"></div>
+          <div id="story-badges" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px"></div>
+        </div>
+        <div id="story-actions" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+      <div style="width:44px;height:2px;background:linear-gradient(90deg,#c084fc,#818cf8);border-radius:2px;margin:0 auto 14px"></div>
+      <div id="story-body" style="font-family:'Lora',serif;font-size:1rem;line-height:1.88;color:#e8e6f0"></div>
+      <div id="story-wc" style="font-size:.72rem;color:#7a788a;text-align:right;margin-top:10px"></div>
+      <button onclick="generateStory()" id="regen-btn" style="width:100%;padding:10px;background:transparent;border:1px dashed #2e2e3d;border-radius:10px;color:#7a788a;font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;margin-top:10px;transition:all .2s">🔄 Regenerate with same settings</button>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="history-sec" style="display:none;width:100%">
+      <div style="width:44px;height:2px;background:linear-gradient(90deg,#c084fc,#818cf8);border-radius:2px;margin:0 auto 12px"></div>
+      <h3 style="font-family:'Lora',serif;font-size:.95rem;color:#7a788a;margin-bottom:10px;text-align:center">📚 Saved Stories</h3>
+      <div id="history-list" style="display:flex;flex-direction:column;gap:7px"></div>
+    </div>
+  </main>
+
+  <footer style="text-align:center;padding:15px;font-size:.73rem;color:#7a788a;border-top:1px solid #2e2e3d;display:flex;flex-direction:column;align-items:center;gap:4px">
+    <span>© <span id="yr"></span> Manik Roy. All Rights Reserved.</span>
+    <span><a href="#" onclick="return false" style="color:#c084fc;text-decoration:none">StoryWeaver</a> — Powered by <a href="https://pollinations.ai" target="_blank" style="color:#c084fc;text-decoration:none">Pollinations AI</a> · Free &amp; No Sign-up</span>
+  </footer>
+</div>
+
+<!-- TOAST -->
+<div id="toast" style="position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a22;border:1px solid #c084fc;color:#e8e6f0;padding:9px 18px;border-radius:99px;font-size:.83rem;opacity:0;transition:all .3s;pointer-events:none;z-index:300;white-space:nowrap"></div>
+
+<style>
+.sw-card{background:#1a1a22;border:1px solid #2e2e3d;border-radius:14px;padding:18px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.45)}
+.sw-label{font-size:.75rem;font-weight:500;color:#7a788a;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.sw-label::after{content:'';flex:1;height:1px;background:#2e2e3d}
+.sw-ta{width:100%;background:#0f0f13;border:1px solid #2e2e3d;border-radius:10px;padding:11px;color:#e8e6f0;font-family:'DM Sans',sans-serif;font-size:.93rem;resize:vertical;min-height:78px;outline:none;transition:border .2s}
+.sw-ta:focus{border-color:#c084fc}
+.sw-sel{width:100%;background:#0f0f13;border:1px solid #2e2e3d;border-radius:10px;padding:9px 11px;color:#e8e6f0;font-family:'DM Sans',sans-serif;font-size:.84rem;outline:none;cursor:pointer}
+.genre-tag,.extra-pill{padding:5px 13px;border-radius:99px;border:1px solid #2e2e3d;font-size:.8rem;cursor:pointer;background:transparent;color:#e8e6f0;transition:all .18s;white-space:nowrap}
+.genre-tag.sel,.extra-pill.on{background:#c084fc;border-color:#c084fc;color:#fff}
+.dot{width:8px;height:8px;border-radius:50%;background:#c084fc;animation:bounce .9s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-8px);opacity:1}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.story-in{animation:fadeIn .5s ease}
+.part-hdr{display:flex;align-items:center;gap:10px;margin:20px 0 10px}
+.part-lbl{font-size:.7rem;font-weight:700;padding:3px 11px;border-radius:99px;background:#c084fc;color:#fff;white-space:nowrap}
+.part-desc{font-size:.79rem;color:#7a788a;font-style:italic}
+.part-line{flex:1;height:1px;background:#2e2e3d}
+.story-para{font-family:'Lora',serif;font-size:1rem;line-height:1.88;color:#e8e6f0;white-space:pre-wrap;margin-bottom:14px}
+.story-badge{font-size:.7rem;padding:2px 9px;border-radius:99px;background:#22222e;border:1px solid #2e2e3d;color:#7a788a}
+.action-btn{padding:7px 12px;border:1px solid #2e2e3d;border-radius:10px;background:transparent;color:#e8e6f0;cursor:pointer;font-size:.79rem;font-family:'DM Sans',sans-serif;transition:all .2s}
+.action-btn:hover{border-color:#c084fc;color:#c084fc}
+.hist-item{padding:11px 15px;background:#1a1a22;border:1px solid #2e2e3d;border-radius:14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all .2s}
+.hist-item:hover{border-color:#c084fc}
+.hist-del{background:none;border:none;color:#7a788a;cursor:pointer;font-size:.9rem;padding:4px 8px;border-radius:6px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#444;border-radius:3px}
+</style>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+var THEMES = {
+  dark:  {bg:"#0f0f13",surface:"#1a1a22",surface2:"#22222e",border:"#2e2e3d",text:"#e8e6f0",muted:"#7a788a",accent:"#c084fc",accent2:"#818cf8",btn:"#7c3aed"},
+  light: {bg:"#f5f3ff",surface:"#ffffff",surface2:"#ede9ff",border:"#ddd8f5",text:"#1e1b2e",muted:"#6b6880",accent:"#7c3aed",accent2:"#4f46e5",btn:"#7c3aed"},
+  oled:  {bg:"#000000",surface:"#0a0a0a",surface2:"#111111",border:"#1e1e1e",text:"#ffffff",muted:"#666666",accent:"#c084fc",accent2:"#818cf8",btn:"#7c3aed"},
+  hc:    {bg:"#000000",surface:"#000000",surface2:"#111111",border:"#ffffff",text:"#ffffff",muted:"#ffff00",accent:"#00ffff",accent2:"#ffff00",btn:"#ffffff"},
+};
+var GENRES = [
+  ["⚔️","Fantasy"],["🚀","Sci-Fi"],["🔍","Mystery"],["💌","Romance"],["👻","Horror"],
+  ["🌍","Adventure"],["🧚","Fairy Tale"],["🎭","Thriller"],["🏛️","Historical"],["🤠","Western"],
+  ["⚡","Mythology"],["🤖","Cyberpunk"],["⚙️","Steampunk"],["🌆","Dystopian"],["☕","Slice of Life"],
+  ["🌀","Supernatural"],["😂","Comedy"],["🏆","Sports"]
+];
+var TONES = [
+  ["whimsical","✨ Whimsical"],["serious","🎯 Serious"],["humorous","😄 Humorous"],
+  ["dark and gritty","🌑 Dark & Gritty"],["poetic and lyrical","🌸 Poetic"],["suspenseful","😰 Suspenseful"],
+  ["heartwarming","🥰 Heartwarming"],["melancholic","🌧️ Melancholic"],["epic and grandiose","🔱 Epic"],
+  ["sarcastic and witty","😏 Sarcastic"],["dreamy and surreal","💭 Dreamy"],["tense and urgent","⚡ Tense"],
+  ["nostalgic","🕰️ Nostalgic"],["philosophical","🧠 Philosophical"],["romantic and passionate","💋 Romantic"],
+  ["eerie and unsettling","🕷️ Eerie"],["playful and childlike","🎈 Playful"],["gritty and realistic","🪨 Gritty Realism"]
+];
+var NARRATORS = [
+  ["third-person omniscient","📖 3rd Person"],["first-person","🗣️ 1st Person"],
+  ["second-person","👁️ 2nd Person (You)"],["third-person limited","🔭 3rd Limited"]
+];
+var ERAS = [
+  ["","🌐 Any Era"],["ancient times (3000 BC)","🏺 Ancient"],["classical Greece or Rome","🏛️ Classical"],
+  ["medieval times","🏰 Medieval"],["the Renaissance","🎨 Renaissance"],["the 1600s Age of Exploration","⛵ Age of Exploration"],
+  ["the 1800s Victorian era","🎩 Victorian"],["the Roaring 1920s","🎷 1920s"],["World War II era","🎖️ WWII Era"],
+  ["the 1960s counterculture era","🌻 1960s"],["the 1980s","📼 1980s"],["the present day","📱 Present Day"],
+  ["the near future (2050s)","🔮 Near Future"],["the far future (3000+)","🛸 Far Future"],
+  ["an alternate history where technology never advanced","⚙️ Alt-History"],
+  ["a timeless mythological age","🌀 Mythological Age"],["the end of the world","☄️ End Times"]
+];
+var SETTINGS = [
+  ["","🎲 Surprise Me"],["a sprawling mega-city","🌆 Mega-City"],["a quiet small village","🏡 Village"],
+  ["a dense ancient forest","🌲 Ancient Forest"],["an underwater civilisation","🌊 Underwater"],
+  ["outer space on a starship","🪐 Starship"],["a magical hidden realm","✨ Magical Realm"],
+  ["a post-apocalyptic wasteland","☢️ Post-Apocalyptic"],["a haunted gothic mansion","🏚️ Haunted Mansion"],
+  ["a floating sky island","☁️ Sky Island"],["a vast frozen tundra","🧊 Frozen Tundra"],
+  ["a scorching desert with hidden ruins","🏜️ Desert Ruins"],["a secretive underground city","🕳️ Underground City"],
+  ["a lush tropical island","🌴 Tropical Island"],["a high-tech research lab","🔬 Research Lab"],
+  ["a mystical library that contains every book ever written","📚 Infinite Library"],
+  ["a dimension between dreams and reality","🌙 Dream Realm"],["a massive generation colony ship mid-voyage","🚀 Colony Ship"]
+];
+var ENDINGS = [
+  ["","🎲 Surprise"],["happy","😊 Happy"],["tragic","💔 Tragic"],["open-ended","🌅 Open-Ended"],
+  ["with an unexpected twist","🌀 Twist"],["bittersweet","🍂 Bittersweet"],["cliffhanger","😱 Cliffhanger"],
+  ["redemptive","🌟 Redemptive"],["pyrrhic — victory at great cost","⚔️ Pyrrhic"],["ironic","😶 Ironic"],
+  ["circular — ending where it began","🔄 Circular"],["ambiguous with no clear resolution","❓ Ambiguous"],
+  ["hopeful despite hardship","🕊️ Hopeful"],["shocking revelation","💥 Shocking Reveal"],
+  ["the villain wins","😈 Villain Wins"],["sacrifice — hero gives everything","🕯️ Sacrifice"]
+];
+var LANGUAGES = [
+  ["English","🇬🇧 English"],["Spanish","🇪🇸 Spanish"],["French","🇫🇷 French"],
+  ["German","🇩🇪 German"],["Italian","🇮🇹 Italian"],["Portuguese","🇵🇹 Portuguese"],
+  ["Dutch","🇳🇱 Dutch"],["Russian","🇷🇺 Russian"],["Polish","🇵🇱 Polish"],
+  ["Turkish","🇹🇷 Turkish"],["Arabic","🇸🇦 Arabic"],["Hindi","🇮🇳 Hindi"],
+  ["Bengali","🇮🇳 Bengali"],["Urdu","🇵🇰 Urdu"],["Chinese (Simplified)","🇨🇳 Chinese (Simplified)"],
+  ["Chinese (Traditional)","🇹🇼 Chinese (Traditional)"],["Japanese","🇯🇵 Japanese"],["Korean","🇰🇷 Korean"],
+  ["Thai","🇹🇭 Thai"],["Vietnamese","🇻🇳 Vietnamese"],["Indonesian","🇮🇩 Indonesian"],
+  ["Malay","🇲🇾 Malay"],["Swahili","🇰🇪 Swahili"],["Greek","🇬🇷 Greek"],
+  ["Swedish","🇸🇪 Swedish"],["Norwegian","🇳🇴 Norwegian"],["Danish","🇩🇰 Danish"],
+  ["Finnish","🇫🇮 Finnish"],["Czech","🇨🇿 Czech"],["Romanian","🇷🇴 Romanian"],
+  ["Hungarian","🇭🇺 Hungarian"],["Hebrew","🇮🇱 Hebrew"],["Persian","🇮🇷 Persian"],
+  ["Tagalog","🇵🇭 Tagalog"],["Latin","🏛️ Latin"]
+];
+var EXTRAS = [
+  ["dialogue","💬 Rich Dialogue"],["sensory","👃 Sensory Details"],["morals","⚖️ Moral Dilemma"],
+  ["twist","🌀 Plot Twist"],["sidekick","🐾 Comic Sidekick"],["flashback","⏪ Flashback"]
+];
+var LOADER_MSGS = ["Weaving your story…","Setting the scene…","Summoning characters…","Crafting the twist…","Painting vivid details…","Adding the final touch…"];
+var WORD_LENS = {
+  flash:  { total: 80,  parts: null },
+  short:  { total: 150, parts: [["Part 1","Setup & Introduction",75],["Part 2","Resolution",75]] },
+  medium: { total: 300, parts: [["Part 1","Introduction & Setting",100],["Part 2","Conflict & Rising Action",100],["Part 3","Climax & Resolution",100]] },
+  long:   { total: 500, parts: [["Part 1","Opening",100],["Part 2","World-Building",100],["Part 3","Conflict",100],["Part 4","Climax",100],["Part 5","Resolution",100]] },
+  epic:   { total: 800, parts: [["Part 1","Opening",100],["Part 2","World & Characters",100],["Part 3","Inciting Incident",100],["Part 4","Rising Action",100],["Part 5","Midpoint Twist",100],["Part 6","Dark Moment",100],["Part 7","Climax",100],["Part 8","Resolution",100]] }
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+var state = {
+  theme: "dark",
+  genre: "Fantasy",
+  tone: "serious",
+  narrator: "third-person omniscient",
+  era: "",
+  setting: "",
+  ending: "",
+  language: "English",
+  length: "medium",
+  extras: {},
+  loading: false,
+  story: null,
+  stories: []
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById("yr").textContent = new Date().getFullYear();
+
+// Load persisted data
+try {
+  state.stories = JSON.parse(localStorage.getItem("sw3_stories") || "[]");
+  var savedTheme = localStorage.getItem("sw3_theme");
+  if (savedTheme && THEMES[savedTheme]) state.theme = savedTheme;
+} catch(e) {}
+
+// Read genre from URL shortcut
+try {
+  var urlGenre = new URLSearchParams(window.location.search).get("genre");
+  if (urlGenre) state.genre = urlGenre;
+} catch(e) {}
+
+// Build static UI
+buildGenres();
+buildSettingsGrid();
+buildExtras();
+buildLanguages();
+buildThemeBar();
+applyTheme(state.theme);
+
+// Show splash then reveal app immediately — no gate needed
+setTimeout(function() {
+  var sp = document.getElementById("splash");
+  sp.classList.add("hide");
+  setTimeout(function() {
+    sp.style.display = "none";
+    document.getElementById("app").classList.add("ready");
+    renderHistory();
+  }, 500);
+}, 1200);
+
+// ── THEME ─────────────────────────────────────────────────────────────────────
+function buildThemeBar() {
+  var bar = document.getElementById("theme-bar");
+  bar.innerHTML = "";
+  [["dark","🌙","Dark"],["light","☀️","Light"],["oled","⬛","OLED"],["hc","◑","High Contrast"]].forEach(function(t) {
+    var b = document.createElement("button");
+    b.title = t[2]; b.textContent = t[1];
+    b.style.cssText = "width:27px;height:27px;border-radius:50%;border:2px solid #2e2e3d;cursor:pointer;font-size:.68rem;background:#1a1a22;color:#e8e6f0;transition:all .2s";
+    b.onclick = function() { setTheme(t[0]); };
+    bar.appendChild(b);
+  });
+}
+
+function setTheme(name) {
+  state.theme = name;
+  localStorage.setItem("sw3_theme", name);
+  applyTheme(name);
+}
+
+function applyTheme(name) {
+  var T = THEMES[name] || THEMES.dark;
+  var isHC = name === "hc";
+  var root = document.documentElement;
+  document.body.style.background = T.bg;
+  document.body.style.color = T.text;
+  // Apply to key elements via CSS vars on root
+  var css = "html{--bg:"+T.bg+";--surface:"+T.surface+";--surface2:"+T.surface2+";--border:"+T.border+";--text:"+T.text+";--muted:"+T.muted+";--accent:"+T.accent+";--accent2:"+T.accent2+";--btn:"+T.btn+";--radius:"+(isHC?"0":"14")+"px;--bw:"+(isHC?"2":"1")+"px}";
+  var st = document.getElementById("theme-vars");
+  if (!st) { st = document.createElement("style"); st.id = "theme-vars"; document.head.appendChild(st); }
+  st.textContent = css + [
+    "html body{background:var(--bg);color:var(--text)}",
+    ".sw-card{background:var(--surface);border:var(--bw) solid var(--border)}",
+    ".sw-label{color:var(--muted)}.sw-label::after{background:var(--border)}",
+    ".sw-ta{background:var(--bg);border-color:var(--border);color:var(--text)}",
+    ".sw-ta:focus{border-color:var(--accent)}",
+    ".sw-sel{background:var(--bg);border-color:var(--border);color:var(--text)}",
+    ".genre-tag,.extra-pill{border-color:var(--border);color:var(--text)}",
+    ".genre-tag.sel,.extra-pill.on{background:var(--accent);border-color:var(--accent);color:"+(isHC?"#000":"#fff")+"}",
+    ".dot{background:var(--accent)}",
+    ".story-para{color:var(--text)}",
+    ".story-badge{background:var(--surface2);border-color:var(--border);color:var(--muted)}",
+    ".action-btn{border-color:var(--border);color:var(--text)}.action-btn:hover{border-color:var(--accent);color:var(--accent)}",
+    ".hist-item{background:var(--surface);border-color:var(--border)}.hist-item:hover{border-color:var(--accent)}",
+    ".part-lbl{background:var(--accent)}.part-desc{color:var(--muted)}.part-line{background:var(--border)}",
+    "#hdr{background:var(--bg);border-color:var(--border)}",
+    "#logo{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}",
+    "#hero-em{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}",
+    "#hero-p{color:var(--muted)}",
+    "#story-body{color:var(--text)}",
+    "#story-wc,#loader-msg{color:var(--muted)}",
+    "#regen-btn{border-color:var(--border);color:var(--muted)}",
+    "#toast{background:var(--surface);border-color:var(--accent);color:var(--text)}",
+    "footer{border-color:var(--border)}footer span{color:var(--muted)}",
+    "#gen-btn{background:var(--btn)}",
+    ".gate-box{background:var(--surface);border-color:var(--border)} .gate-box h2{color:var(--text)} .gate-box p,.gate-box .gate-note{color:var(--muted)}",
+    ".gate-box input{background:var(--bg);border-color:var(--border);color:var(--text)}",
+    ".gate-box input:focus{border-color:var(--accent)}",
+    ".gate-box button{background:var(--btn)}",
+    ".hist-del{color:var(--muted)}"
+  ].join("");
+
+  // Update theme button borders
+  var bar = document.getElementById("theme-bar");
+  if (bar) Array.from(bar.children).forEach(function(b, i) {
+    var k = ["dark","light","oled","hc"][i];
+    b.style.borderColor = (k === name) ? T.accent : T.border;
+    b.style.background = T.surface;
+    b.style.color = T.text;
+  });
+}
+
+// ── UI BUILDERS ───────────────────────────────────────────────────────────────
+function buildGenres() {
+  var c = document.getElementById("genres");
+  GENRES.forEach(function(g) {
+    var b = document.createElement("button");
+    b.className = "genre-tag" + (g[1] === state.genre ? " sel" : "");
+    b.textContent = g[0] + " " + g[1];
+    b.onclick = function() {
+      state.genre = g[1];
+      document.querySelectorAll(".genre-tag").forEach(function(x){ x.classList.remove("sel"); });
+      b.classList.add("sel");
+    };
+    c.appendChild(b);
+  });
+  document.getElementById("prompt").oninput = function() {
+    document.getElementById("char-count").textContent = this.value.length + "/400";
+  };
+}
+
+function buildSettingsGrid() {
+  var grid = document.getElementById("settings-grid");
+  var fields = [
+    ["sel-length","📏 Length",[["flash","⚡ Flash (~80w)"],["short","📖 Short (~150w)"],["medium","📚 Medium (~300w)"],["long","📜 Long (~500w)"],["epic","🗺️ Epic (~800w)"]],"medium"],
+    ["sel-tone","🎨 Tone",TONES,"serious"],
+    ["sel-narrator","👤 Narrator",NARRATORS,"third-person omniscient"],
+    ["sel-era","⏳ Time Period",ERAS,""],
+    ["sel-setting","🌍 Setting",SETTINGS,""],
+    ["sel-ending","🔚 Ending",ENDINGS,""]
+  ];
+  fields.forEach(function(f) {
+    var box = document.createElement("div");
+    box.style.cssText = "display:flex;flex-direction:column;gap:5px";
+    var lbl = document.createElement("div");
+    lbl.style.cssText = "font-size:.75rem;color:#7a788a";
+    lbl.textContent = f[1];
+    var sel = document.createElement("select");
+    sel.id = f[0]; sel.className = "sw-sel";
+    f[2].forEach(function(opt) {
+      var o = document.createElement("option");
+      o.value = opt[0]; o.textContent = opt[1];
+      if (opt[0] === f[3]) o.selected = true;
+      sel.appendChild(o);
+    });
+    box.appendChild(lbl); box.appendChild(sel);
+    grid.appendChild(box);
+  });
+}
+
+function buildExtras() {
+  var c = document.getElementById("extras");
+  EXTRAS.forEach(function(ex) {
+    var b = document.createElement("button");
+    b.className = "extra-pill";
+    b.textContent = ex[1];
+    b.onclick = function() {
+      state.extras[ex[0]] = !state.extras[ex[0]];
+      b.classList.toggle("on", !!state.extras[ex[0]]);
+    };
+    c.appendChild(b);
+  });
+}
+
+function buildLanguages() {
+  var sel = document.getElementById("sel-language");
+  LANGUAGES.forEach(function(l) {
+    var o = document.createElement("option");
+    o.value = l[0]; o.textContent = l[1];
+    if (l[0] === "English") o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+// ── STORY GENERATION ──────────────────────────────────────────────────────────
+var loaderTimer = null;
+
+async function generateStory() {
+  var promptEl = document.getElementById("prompt");
+  var promptVal = promptEl.value.trim();
+  if (!promptVal) { showToast("✏️ Please enter a story prompt!"); return; }
+
+  var length   = document.getElementById("sel-length").value;
+  var tone     = document.getElementById("sel-tone").value;
+  var narrator = document.getElementById("sel-narrator").value;
+  var era      = document.getElementById("sel-era").value;
+  var setting  = document.getElementById("sel-setting").value;
+  var ending   = document.getElementById("sel-ending").value;
+  var language = document.getElementById("sel-language").value;
+
+  var activeExtras = Object.keys(state.extras).filter(function(k){ return state.extras[k]; });
+  var extraMap = {
+    dialogue:"Include rich, character-revealing dialogue",
+    sensory:"Use vivid sensory details (sight, sound, smell, touch, taste)",
+    morals:"Weave in a meaningful moral dilemma",
+    twist:"Include an unexpected plot twist",
+    sidekick:"Feature a comic or quirky sidekick",
+    flashback:"Include a flashback scene"
+  };
+  var extraInstr = activeExtras.length ? "\n\nAdditional requirements:\n" + activeExtras.map(function(k){ return "- " + extraMap[k]; }).join("\n") : "";
+  var eraStr  = era     ? " Set in " + era + "." : "";
+  var setStr  = setting ? " Location: " + setting + "." : "";
+  var endStr  = ending  ? " Give it a " + ending + " ending." : "";
+  var langStr = language !== "English" ? " Write entirely in " + language + "." : "";
+
+  var wl = WORD_LENS[length] || WORD_LENS.medium;
+  var wordCountInstr = "";
+  if (!wl.parts) {
+    // Flash — no parts, just prose
+    wordCountInstr = "WORD COUNT: Write exactly " + wl.total + " words of continuous prose. No part labels.";
+  } else {
+    wordCountInstr = "WORD COUNT RULES — follow these exactly, in order:\n";
+    wl.parts.forEach(function(p, i) {
+      wordCountInstr += (i+1) + ". Write the label \"" + p[0] + ": " + p[1] + "\" on its own line.\n";
+      wordCountInstr += "   Then write exactly " + p[2] + " words of prose for this part.\n";
+      wordCountInstr += "   Count to " + p[2] + " before moving on.\n";
+    });
+    wordCountInstr += "Total: " + wl.total + " words across all parts. Do NOT stop early.";
+  }
+
+  var sysPrompt = "You are a masterful storyteller. Write a " + tone + " " + state.genre + " story using " + narrator + " perspective." + eraStr + setStr + endStr + langStr + "\n\n" + wordCountInstr + "\n\nOUTPUT FORMAT:\n- Line 1: Story title only (plain text" + (language !== "English" ? ", in " + language : "") + ")\n- Blank line\n- Then each part label on its own line, immediately followed by exactly the required words of prose\n- No markdown, no asterisks, no word-count note at the end" + extraInstr;
+
+  // UI — loading state
+  state.loading = true;
+  document.getElementById("gen-btn").disabled = true;
+  document.getElementById("gen-btn").style.opacity = "0.5";
+  document.getElementById("regen-btn").disabled = true;
+  document.getElementById("story-out").style.display = "none";
+  document.getElementById("loader").style.display = "flex";
+  var mi = 0;
+  loaderTimer = setInterval(function() {
+    document.getElementById("loader-msg").textContent = LOADER_MSGS[mi++ % LOADER_MSGS.length];
+  }, 1800);
+
+  try {
+    // Pollinations AI — free, no API key, no registration, CORS-enabled
+    // Retry up to 3 times with model fallback on timeout/error
+    var MODELS = ["openai", "mistral", "openai-large"];
+    var text = "";
+    var lastErr = "";
+
+    for (var attempt = 0; attempt < MODELS.length; attempt++) {
+      var controller = new AbortController();
+      var timeoutId = setTimeout(function(){ controller.abort(); }, 55000); // 55s timeout
+
+      try {
+        document.getElementById("loader-msg").textContent =
+          attempt === 0 ? "Weaving your story…" : "Retrying with backup model…";
+
+        var res = await fetch("https://text.pollinations.ai/openai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model: MODELS[attempt],
+            messages: [
+              { role: "system", content: sysPrompt },
+              { role: "user",   content: "Write a " + state.genre + " story about: " + promptVal }
+            ],
+            seed: Math.floor(Math.random() * 9999)
+          })
+        });
+
+        clearTimeout(timeoutId);
+
+        if (res.status === 429) {
+          // Rate limited — wait 5s then retry
+          await new Promise(function(r){ setTimeout(r, 5000); });
+          lastErr = "Rate limited";
+          continue;
+        }
+
+        if (!res.ok) {
+          lastErr = "Server error " + res.status;
+          continue;
+        }
+
+        var data = await res.json();
+        text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+        if (text) break; // success
+        lastErr = "Empty response";
+
+      } catch(fetchErr) {
+        clearTimeout(timeoutId);
+        lastErr = fetchErr.name === "AbortError" ? "Request timed out" : fetchErr.message;
+        // Brief pause before retry
+        if (attempt < MODELS.length - 1) await new Promise(function(r){ setTimeout(r, 2000); });
+      }
+    }
+
+    if (!text) {
+      showToast("⚠️ " + lastErr + " — please try again in a moment.");
+      return;
+    }
+
+    var lines = text.trim().split("\n");
+    var title = lines[0].replace(/^#+\s*/,"").trim();
+    var body  = lines.slice(1).join("\n").trim();
+
+    // Count prose words, excluding Part N: header lines
+    var partRe = /^Part\s+\d+\s*:/i;
+    var wc = body.split("\n").filter(function(l){ return !partRe.test(l.trim()); }).join(" ").split(/\s+/).filter(Boolean).length;
+
+    var badges = [state.genre, tone.split(" ")[0],
+      narrator==="first-person"?"1st Person":narrator==="second-person"?"2nd Person":narrator==="third-person limited"?"3rd Limited":"3rd Person"
+    ];
+    if (era)      badges.push(era.replace(/^(the|a|an) /i,"").split(" ").slice(0,2).join(" "));
+    if (ending)   badges.push(ending.split(" ")[0]);
+    if (language !== "English") badges.push(language.split(" ")[0]);
+
+    state.story = { title: title || "Your Story", body: body, wc: wc, badges: badges, raw: text, tone: tone };
+    renderStory(state.story);
+    document.getElementById("story-out").scrollIntoView({ behavior: "smooth", block: "start" });
+
+  } catch(e) {
+    showToast("⚠️ " + (e.message || "Network error — check your connection and try again."));
+  } finally {
+    clearInterval(loaderTimer);
+    state.loading = false;
+    document.getElementById("loader").style.display = "none";
+    document.getElementById("gen-btn").disabled = false;
+    document.getElementById("gen-btn").style.opacity = "1";
+    document.getElementById("regen-btn").disabled = false;
+  }
+}
+
+function renderStory(s) {
+  document.getElementById("story-title").textContent = s.title;
+  document.getElementById("story-wc").textContent = "~" + s.wc + " words";
+
+  // Badges
+  var badgeEl = document.getElementById("story-badges");
+  badgeEl.innerHTML = "";
+  s.badges.forEach(function(b) {
+    var sp = document.createElement("span");
+    sp.className = "story-badge"; sp.textContent = b;
+    badgeEl.appendChild(sp);
+  });
+
+  // Actions
+  var actEl = document.getElementById("story-actions");
+  actEl.innerHTML = "";
+  [["📋 Copy",copyStory],["💾 Save",saveStory],["🔗 Share",shareStory],["⬇️ Download",downloadStory],["🖨️ Print",printStory]].forEach(function(a) {
+    var b = document.createElement("button");
+    b.className = "action-btn"; b.textContent = a[0];
+    b.onclick = a[1]; actEl.appendChild(b);
+  });
+
+  // Body — parse part headers
+  var bodyEl = document.getElementById("story-body");
+  bodyEl.innerHTML = "";
+  var partRe = /^(Part\s+\d+)\s*:\s*(.+)$/i;
+  var buf = [];
+  function flushBuf() {
+    var txt = buf.join("\n").trim();
+    if (txt) { var p = document.createElement("p"); p.className = "story-para"; p.textContent = txt; bodyEl.appendChild(p); }
+    buf = [];
+  }
+  s.body.split("\n").forEach(function(line) {
+    var m = line.trim().match(partRe);
+    if (m) {
+      flushBuf();
+      var hdr = document.createElement("div"); hdr.className = "part-hdr";
+      var lbl = document.createElement("span"); lbl.className = "part-lbl"; lbl.textContent = m[1];
+      var desc = document.createElement("span"); desc.className = "part-desc"; desc.textContent = m[2];
+      var ln = document.createElement("span"); ln.className = "part-line";
+      hdr.appendChild(lbl); hdr.appendChild(desc); hdr.appendChild(ln);
+      bodyEl.appendChild(hdr);
+    } else { buf.push(line); }
+  });
+  flushBuf();
+
+  var out = document.getElementById("story-out");
+  out.style.display = "block";
+  out.classList.remove("story-in");
+  void out.offsetWidth;
+  out.classList.add("story-in");
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+function copyStory() {
+  if (!state.story) return;
+  var text = state.story.title + "\n\n" + state.story.body;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function(){ showToast("📋 Copied!"); }).catch(function(){ fallbackCopy(text); });
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text) {
+  var ta = document.createElement("textarea");
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); showToast("📋 Copied!"); } catch(e) { showToast("⚠️ Copy failed"); }
+  document.body.removeChild(ta);
+}
+
+function saveStory() {
+  if (!state.story) { showToast("Nothing to save yet!"); return; }
+  var entry = { title:state.story.title, genre:state.genre, tone:state.story.tone||"", body:state.story.body, raw:state.story.raw, date:new Date().toLocaleDateString() };
+  state.stories = [entry].concat(state.stories).slice(0,15);
+  try { localStorage.setItem("sw3_stories", JSON.stringify(state.stories)); } catch(e) {}
+  renderHistory();
+  showToast("💾 Story saved!");
+}
+
+function shareStory() {
+  if (!state.story) return;
+  if (navigator.share) {
+    navigator.share({ title: state.story.title, text: state.story.body }).catch(function(){});
+  } else { copyStory(); showToast("🔗 Copied (Web Share unavailable)"); }
+}
+
+function downloadStory() {
+  if (!state.story) return;
+  var yr = new Date().getFullYear();
+  var blob = new Blob([state.story.title + "\n\n" + state.story.body + "\n\n© " + yr + " Manik Roy — StoryWeaver"], {type:"text/plain;charset=utf-8"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = (state.story.title.replace(/[^a-z0-9]/gi,"_").toLowerCase() || "story") + ".txt";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href); showToast("⬇️ Downloaded!");
+}
+
+function printStory() {
+  if (!state.story) return;
+  var yr = new Date().getFullYear();
+  var w = window.open("","_blank");
+  if (!w) { showToast("⚠️ Pop-up blocked — allow pop-ups and try again"); return; }
+  w.document.write('<html><head><title>' + state.story.title + '</title><style>body{font-family:Georgia,serif;max-width:640px;margin:40px auto;line-height:1.9;font-size:1.05rem}h1{margin-bottom:20px}p{white-space:pre-wrap;margin-bottom:16px}small{color:#888;display:block;margin-top:30px}</style></head><body><h1>' + state.story.title + '</h1><p>' + state.story.body.replace(/</g,"&lt;").replace(/>/g,"&gt;") + '</p><small>&copy; ' + yr + ' Manik Roy &mdash; StoryWeaver</small></body></html>');
+  w.document.close(); w.focus(); w.print();
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+function renderHistory() {
+  var sec  = document.getElementById("history-sec");
+  var list = document.getElementById("history-list");
+  if (!state.stories.length) { sec.style.display = "none"; return; }
+  sec.style.display = "block";
+  list.innerHTML = "";
+  state.stories.forEach(function(s, i) {
+    var item = document.createElement("div"); item.className = "hist-item";
+    var info = document.createElement("div"); info.style.cssText = "flex:1;min-width:0";
+    var title = document.createElement("div"); title.style.cssText = "font-size:.88rem;font-weight:500;margin-bottom:1px"; title.textContent = s.title;
+    var meta = document.createElement("div"); meta.style.cssText = "font-size:.73rem;color:#7a788a"; meta.textContent = s.genre + " · " + (s.tone||"") + " · " + s.date;
+    info.appendChild(title); info.appendChild(meta);
+    info.onclick = function() { loadStory(s); };
+    var del = document.createElement("button"); del.className = "hist-del"; del.textContent = "🗑"; del.title = "Delete";
+    del.onclick = function(e) { e.stopPropagation(); deleteStory(i); };
+    item.appendChild(info); item.appendChild(del);
+    list.appendChild(item);
+  });
+}
+
+function loadStory(s) {
+  var partRe = /^Part\s+\d+\s*:/i;
+  var wc = (s.body||"").split("\n").filter(function(l){ return !partRe.test(l.trim()); }).join(" ").split(/\s+/).filter(Boolean).length;
+  state.story = { title:s.title, body:s.body||"", wc:wc, badges:[s.genre,s.tone||""], raw:s.raw||"", tone:s.tone||"" };
+  renderStory(state.story);
+  document.getElementById("story-out").scrollIntoView({ behavior:"smooth", block:"start" });
+}
+
+function deleteStory(i) {
+  state.stories.splice(i, 1);
+  try { localStorage.setItem("sw3_stories", JSON.stringify(state.stories)); } catch(e) {}
+  renderHistory();
+  showToast("🗑️ Deleted");
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+var toastTimer = null;
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  var el = document.getElementById("toast");
+  el.textContent = msg;
+  el.style.opacity = "1";
+  el.style.transform = "translateX(-50%) translateY(0)";
+  toastTimer = setTimeout(function() {
+    el.style.opacity = "0";
+    el.style.transform = "translateX(-50%) translateY(20px)";
+  }, 2600);
+}
+
+// ── SERVICE WORKER ────────────────────────────────────────────────────────────
+(function() {
+  if (!("serviceWorker" in navigator)) return;
+  if (!window.isSecureContext) return;
+  if (location.protocol !== "https:" && location.hostname !== "localhost") return;
+  if (window.self !== window.top) return;
+  window.addEventListener("load", function() {
+    navigator.serviceWorker.register("./service-worker.js");
+  });
+})();
+
+// ── INSTALL PROMPT ────────────────────────────────────────────────────────────
+var deferredPrompt = null;
+var isStandalone = window.matchMedia("(display-mode: standalone)").matches || !!window.navigator.standalone;
+window.addEventListener("beforeinstallprompt", function(e) {
+  e.preventDefault();
+  if (isStandalone || localStorage.getItem("sw_dismissed")) return;
+  deferredPrompt = e;
+  document.getElementById("install-banner").classList.add("show");
+});
+document.getElementById("install-btn").onclick = function() {
+  document.getElementById("install-banner").classList.remove("show");
+  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(function(){ deferredPrompt = null; }); }
+};
+document.getElementById("dismiss-btn").onclick = function() {
+  document.getElementById("install-banner").classList.remove("show");
+  localStorage.setItem("sw_dismissed","1");
+};
+window.addEventListener("appinstalled", function() {
+  document.getElementById("install-banner").classList.remove("show");
+  deferredPrompt = null;
+});
+</script>
+</body>
+</html>
